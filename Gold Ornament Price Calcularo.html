@@ -1,0 +1,272 @@
+<!--
+Design an interactive HTML page for calculating and managing gold ornament pricing, using JavaScript for all local calculations and data handling. The page should include:
+
+A visually appealing gold-themed layout to enhance user experience.
+
+A form at the top of the page with the following input fields:
+
+Ornament name (text input field)
+
+Weight of the gold ornament (grams)
+
+Gold purity selection, implemented as a dropdown menu listing common karat values (e.g. 24K, 22K, 18K), each showing corresponding purity percentages. Include an option for custom purity, allowing users to manually enter a percentage if their ornament does not match the dropdown choices.
+
+Current price of gold per gram
+
+Making charges per gram
+
+GST percentage applicable on making charges
+
+GST percentage applicable on gold price
+
+Upon submitting the form, automatically calculate and display:
+
+Total price of the gold before GST and any discounts
+
+Total making charges before GST
+
+GST amount applicable to the gold price
+
+GST amount applicable to the making charges
+
+Final price of the ornament after adding all charges and GST
+
+After calculations, display an "Add" button allowing the user to save the current ornament’s details into a table. The table should present all user inputs and calculated outputs for each entry. Allow multiple ornaments to be added, with each new entry appearing as a separate row.
+
+Ensure the interface is intuitive, responsive, and visually consistent with a gold color palette, showcasing both usability and aesthetics.
+
+This refined prompt makes the intent, expected UI/UX, and data management requirements explicitly clear for any AI or developer.
+Genrated by Perplexity AI
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gold Ornament Pricing Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #FCF6BA;
+      color: #7D5A18;
+      margin: 0;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 580px;
+      margin: 2rem auto;
+      background: #FFFDE4;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(150, 112, 43, 0.15);
+      padding: 2rem;
+    }
+    h2 {
+      color: #B98A3A;
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      color: #B98A3A;
+    }
+    input, select {
+      width: 98%;
+      padding: 0.4rem;
+      margin: 8px 0 16px 0;
+      border-radius: 6px;
+      border: 1px solid #DCC483;
+      background: #FFF4C2;
+    }
+    .calc-output {
+      background: #FBF4CC;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      color: #856110;
+      border: 1px dashed #E9B949;
+    }
+    .btn {
+      padding: 0.6rem 1.5rem;
+      background: linear-gradient(90deg, #FFD700, #FCC201, #BA8B3A 90%);
+      color: #7D5A18;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 0.4rem;
+      margin-top: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #FFFDE4;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid #E9B949;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    th {
+      background: #FFD700;
+      color: #7D5A18;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gold Ornament Pricing Calculator</h2>
+    <form id="goldForm">
+      <label for="ornamentName">Ornament Name:</label><br />
+      <input type="text" id="ornamentName" name="ornamentName" placeholder="Enter ornament name" required />
+
+      <label for="weight">Weight (grams):</label><br />
+      <input type="number" id="weight" name="weight" min="0.01" step="0.01" required />
+
+      <label for="purity">Purity (karat):</label><br />
+      <select id="karatDropdown" name="purity">
+        <option value="24,99.9">24K &mdash; 99.9%</option>
+        <option value="22,91.6">22K &mdash; 91.6%</option>
+        <option value="18,75">18K &mdash; 75%</option>
+        <option value="custom">Custom Purity (%)</option>
+      </select>
+      <input type="number" id="customPurity" name="customPurity" min="0" max="100" step="0.01" placeholder="Custom purity %" style="display:none;"/>
+
+      <label for="goldPrice">Current Gold Price (per gram):</label><br />
+      <input type="number" id="goldPrice" name="goldPrice" min="0.01" step="0.01" required />
+
+      <label for="makingCharge">Making Charges (per gram):</label><br />
+      <input type="number" id="makingCharge" name="makingCharge" min="0" step="0.01" required />
+
+      <label for="gstMaking">GST on Making Charges (%):</label><br />
+      <input type="number" id="gstMaking" name="gstMaking" min="0" max="100" step="0.01" required />
+
+      <label for="gstGold">GST on Gold Price (%):</label><br />
+      <input type="number" id="gstGold" name="gstGold" min="0" max="100" step="0.01" required />
+
+      <button type="button" class="btn" onclick="calculate()">Calculate</button>
+    </form>
+
+    <div id="output" class="calc-output" style="display:none;"></div>
+    <button type="button" class="btn" onclick="addToTable()" id="addBtn" style="display:none;">Add Details</button>
+
+    <h3>Ornament Details Table</h3>
+    <table id="detailsTable">
+      <thead>
+        <tr>
+          <th>Ornament Name</th>
+          <th>Weight (g)</th>
+          <th>Karat/Purity (%)</th>
+          <th>Gold Price/g</th>
+          <th>Making Charges/g</th>
+          <th>GST(Charge)%</th>
+          <th>GST(Gold)%</th>
+          <th>Total Gold Price</th>
+          <th>Total Making Charges</th>
+          <th>GST on Gold</th>
+          <th>GST on Charges</th>
+          <th>Final Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rows will be added dynamically -->
+      </tbody>
+    </table>
+  </div>
+<script>
+  // Show custom purity input if selected
+  document.getElementById('karatDropdown').addEventListener('change', function() {
+    if(this.value === 'custom') {
+      document.getElementById('customPurity').style.display = 'block';
+      document.getElementById('customPurity').required = true;
+    } else {
+      document.getElementById('customPurity').style.display = 'none';
+      document.getElementById('customPurity').required = false;
+      document.getElementById('customPurity').value = '';
+    }
+  });
+
+  let currentCalculation = null;
+
+  function calculate() {
+    // Get inputs
+    const name = document.getElementById('ornamentName').value.trim();
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const pricePerGram = parseFloat(document.getElementById('goldPrice').value) || 0;
+    const makingCharge = parseFloat(document.getElementById('makingCharge').value) || 0;
+    const gstMaking = parseFloat(document.getElementById('gstMaking').value) || 0;
+    const gstGold = parseFloat(document.getElementById('gstGold').value) || 0;
+    const karatVal = document.getElementById('karatDropdown').value;
+    let purityPercent, karat;
+
+    if(karatVal === 'custom') {
+      purityPercent = parseFloat(document.getElementById('customPurity').value) || 0;
+      karat = "Custom";
+    } else {
+      [karat, purityPercent] = karatVal.split(',');
+      purityPercent = parseFloat(purityPercent);
+    }
+
+    // Calculations
+    let totalGoldPrice = weight * pricePerGram * (purityPercent / 100);
+    let totalMakingCharges = weight * makingCharge;
+    let gstOnGold = totalGoldPrice * gstGold / 100;
+    let gstOnMaking = totalMakingCharges * gstMaking / 100;
+    let finalPrice = totalGoldPrice + totalMakingCharges + gstOnGold + gstOnMaking;
+
+    // Store for table addition
+    currentCalculation = {
+      name,
+      weight: weight.toFixed(2),
+      purity: `${karat}K ${purityPercent.toFixed(2)}%`,
+      goldPrice: pricePerGram.toFixed(2),
+      makingCharge: makingCharge.toFixed(2),
+      gstMaking: gstMaking.toFixed(2),
+      gstGold: gstGold.toFixed(2),
+      totalGoldPrice: totalGoldPrice.toFixed(2),
+      totalMakingCharges: totalMakingCharges.toFixed(2),
+      gstOnGold: gstOnGold.toFixed(2),
+      gstOnMaking: gstOnMaking.toFixed(2),
+      finalPrice: finalPrice.toFixed(2)
+    };
+
+    // Show outputs
+    document.getElementById('output').style.display = 'block';
+    document.getElementById('output').innerHTML = `
+      <strong>Ornament:</strong> ${name} <br>
+      <strong>Total Gold Price (before GST & discount):</strong> ₹${currentCalculation.totalGoldPrice}<br>
+      <strong>Total Making Charges (before GST):</strong> ₹${currentCalculation.totalMakingCharges}<br>
+      <strong>GST on Gold Price:</strong> ₹${currentCalculation.gstOnGold}<br>
+      <strong>GST on Making Charges:</strong> ₹${currentCalculation.gstOnMaking}<br>
+      <strong>Final Price of Ornament:</strong> <span style="color:#BA8B3A;font-weight:bold;font-size:1.15em;">₹${currentCalculation.finalPrice}</span>
+    `;
+    document.getElementById('addBtn').style.display = 'inline-block';
+  }
+
+  function addToTable() {
+    if(!currentCalculation) return;
+    const tbody = document.getElementById('detailsTable').querySelector("tbody");
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${currentCalculation.name}</td>
+      <td>${currentCalculation.weight}</td>
+      <td>${currentCalculation.purity}</td>
+      <td>₹${currentCalculation.goldPrice}</td>
+      <td>₹${currentCalculation.makingCharge}</td>
+      <td>${currentCalculation.gstMaking}%</td>
+      <td>${currentCalculation.gstGold}%</td>
+      <td>₹${currentCalculation.totalGoldPrice}</td>
+      <td>₹${currentCalculation.totalMakingCharges}</td>
+      <td>₹${currentCalculation.gstOnGold}</td>
+      <td>₹${currentCalculation.gstOnMaking}</td>
+      <td style="color:#B98A3A;font-weight:bold;">₹${currentCalculation.finalPrice}</td>
+    `;
+    tbody.appendChild(row);
+    document.getElementById('goldForm').reset();
+    document.getElementById('output').style.display = 'none';
+    document.getElementById('addBtn').style.display = 'none';
+    document.getElementById('customPurity').style.display = 'none';
+    currentCalculation = null;
+  }
+</script>
+</body>
+</html>
