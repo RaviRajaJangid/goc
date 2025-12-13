@@ -120,6 +120,15 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             background: #a07409;
         }
 
+        /* Style calculate button when disabled */
+        #calculateBtn:disabled {
+            background: #cfcfcf; /* gray */
+            color: #6e6e6e;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 1; /* keep clear color */
+        }
+
         .results-box {
             background: #fff8dc;
             padding: 15px;
@@ -211,6 +220,9 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                 <div id="hGapInputField">
                     <label>आज की 24K प्रति ग्राम सोने की कीमत (Today 24K Price per Gram)</label>
                     <input type="number" value="12532.832" id="goldPrice" required>
+                    <div id="goldPriceError" style="display:none; color:#b21f2d; font-size:13px; margin-top:4px;">
+                        आज की 24K प्रति ग्राम सोने की कीमत गलत है।(Todays 1 gram gold value for 24k is incorrect)
+                    </div>
                 </div>
                 <div id="hGapInputField">
                     <label>आभूषण का नाम (Ornament Name)</label>
@@ -234,6 +246,10 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
 
                     <input type="number" id="customPurity" placeholder="शुद्धता % दर्ज करें (Enter purity %)"
                         style="display:none; margin-top:5px;">
+                    <!-- Price per gram for the selected purity -->
+                    <div id="pricePerGramLabel" style="margin-top:6px; font-size:14px; color:#6b4f24;">
+                        ₹0.000 / gram
+                    </div>
                 </div>
 
                 <!-- Wastage field removed as per request -->
@@ -241,6 +257,9 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                 <div id="hGapInputField">
                     <label>प्रति ग्राम निर्माण शुल्क(%) (Making Charges per Gram in %)</label>
                     <input type="number" id="makingCharges" value="12.5" step="0.01" required>
+                    <div id="makingChargesError" style="display:none; color:#b21f2d; font-size:13px; margin-top:4px;">
+                        प्रति ग्राम निर्माण शुल्क % is incorrect, it can be up to 100% only.
+                    </div>
                 </div>
                 <!-- GST on Making removed -->
                 <div id="hGapInputField">
@@ -256,7 +275,7 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             </div>
         </form>
 
-        <button onclick="calculatePrice()">गणना करें (Calculate)</button>
+        <button id="calculateBtn" onclick="calculatePrice()">गणना करें (Calculate)</button>
 
         <div id="results" class="results-box" style="display:none;"></div>
 
@@ -309,6 +328,14 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
         let items = []; // store all rows
 
         function calculatePrice() {
+            // run validation for goldPrice
+            validateGoldPrice();
+            // Ensure making charges are valid too and prevent calculation when errors exist
+            validateMakingCharges();
+            if (!updateCalculateButtonState()) {
+                console.warn('Cannot calculate: fix errors first');
+                return;
+            }
             // Read inputs defensively — default missing numeric fields to 0
             const name = document.getElementById("ornamentName").value || "";
             const weight = parseFloat(document.getElementById("weight").value) || 0;
@@ -329,6 +356,8 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             } else {
                 purity = parseFloat(puritySelect) || 1.0;
             }
+            // Update the displayed price per gram after purity is determined
+            updatePricePerGram(purity);
             console.log("purity:", purity);
             console.log("1 gm gold price:", purity * goldPrice);
             const pureGoldPrice = weight * purity * goldPrice;
@@ -367,6 +396,84 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
 
             document.getElementById("addBtn").style.display = "inline-block";
         }
+
+        // Update price per gram label based on current gold price and purity
+        function updatePricePerGram(purityOverride) {
+            const goldPriceEl = document.getElementById("goldPrice");
+            const goldPrice = parseFloat(goldPriceEl && goldPriceEl.value) || 0;
+            let purityValue = purityOverride;
+            if (typeof purityValue === 'undefined') {
+                const puritySelect = document.getElementById("puritySelect").value;
+                if (puritySelect === "custom") {
+                    const custom = parseFloat(document.getElementById("customPurity").value);
+                    purityValue = !isNaN(custom) ? custom / 100 : 1.0;
+                } else {
+                    purityValue = parseFloat(puritySelect) || 1.0;
+                }
+            }
+            const pricePerGram = goldPrice * purityValue;
+            const label = document.getElementById("pricePerGramLabel");
+            if (label) {
+                label.textContent = `₹${pricePerGram.toFixed(3)} / gram`;
+            }
+            return pricePerGram;
+        }
+
+        // Wire up event listeners to update label when gold price, purity selection, or custom purity changes
+        document.getElementById("puritySelect").addEventListener("change", function (e) {
+            toggleCustomPurity();
+            updatePricePerGram();
+            updateCalculateButtonState();
+        });
+        document.getElementById("goldPrice").addEventListener("input", function () { updatePricePerGram(); validateGoldPrice(); updateCalculateButtonState(); });
+        document.getElementById("makingCharges").addEventListener("input", function () { validateMakingCharges(); updateCalculateButtonState(); });
+        document.getElementById("customPurity").addEventListener("input", function () { updatePricePerGram(); updateCalculateButtonState(); });
+
+        // Initialize label and validation on page load
+        updatePricePerGram();
+        validateGoldPrice();
+        validateMakingCharges();
+
+        // Validate today's 24k gold price and show error label if > 25000
+        function validateGoldPrice() {
+            const goldPriceEl = document.getElementById("goldPrice");
+            const errorEl = document.getElementById("goldPriceError");
+            const val = parseFloat(goldPriceEl && goldPriceEl.value) || 0;
+            if (val > 25000) {
+                if (errorEl) errorEl.style.display = 'block';
+                // set a visual hint on input
+                goldPriceEl.style.borderColor = '#b21f2d';
+            } else {
+                if (errorEl) errorEl.style.display = 'none';
+                goldPriceEl.style.borderColor = '#d2b48c';
+            }
+            return !(val > 25000);
+        }
+            // Validate making charges input and show error if > 80%
+            function validateMakingCharges() {
+                const makingEl = document.getElementById("makingCharges");
+                const errorEl = document.getElementById("makingChargesError");
+                const val = parseFloat(makingEl && makingEl.value) || 0;
+                if (val > 80) {
+                    if (errorEl) errorEl.style.display = 'block';
+                    makingEl.style.borderColor = '#b21f2d';
+                } else {
+                    if (errorEl) errorEl.style.display = 'none';
+                    makingEl.style.borderColor = '#d2b48c';
+                }
+                return !(val > 80);
+            }
+            
+            function updateCalculateButtonState() {
+                const btn = document.getElementById('calculateBtn');
+                if (!btn) return true;
+                const isGoldValid = validateGoldPrice();
+                const isMakingValid = validateMakingCharges();
+                const isValid = isGoldValid && isMakingValid;
+                btn.disabled = !isValid;
+                return isValid;
+            }
+          
 
         function addToTable() {
             // Guard: ensure a lastItem exists
