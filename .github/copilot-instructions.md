@@ -19,8 +19,8 @@ Both are standalone—no build process, dependencies, or backend needed. Files o
 ```javascript
 items = []; // Global array storing all ornament records
 window.lastItem = { 
-  name, weight, purity, wastage,
-  totalGoldBeforeGst, totalMaking, gstOnGold, gstOnMaking, finalPrice 
+  name, weight, purity,
+  totalGoldBeforeGst, totalMaking, gstOnGold, finalPrice 
 };
 ```
 
@@ -29,12 +29,10 @@ window.lastItem = {
 ### Core Formula Sequence (`calculatePrice()` function)
 ```
 1. Pure Gold Price = weight × purity × goldPrice
-2. Wastage Amount = pure gold price × (wastage ÷ 100)
-3. Total Gold Before GST = pure gold + wastage
+2. Total Gold Before GST = pure gold (wastage removed in current implementation)
 4. Total Making = weight × makingCharges
 5. GST on Gold = total gold before GST × (goldGst ÷ 100)
-6. GST on Making = total making × (makingGst ÷ 100)
-7. Final Price = total gold + total making + GST on both
+6. Final Price = total gold + total making + GST on gold
 ```
 
 **Important**: Wastage is optional (defaults to 0) but represents gold loss during crafting—it's **added to cost**, not subtracted.
