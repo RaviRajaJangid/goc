@@ -145,8 +145,10 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
         }
 
         table {
-            width: 1500px;
-            /* Ensures table scrolls on mobile */
+            width: 100%;
+            /* Allow table to be flexible; a min-width will cause horizontal scroll on small screens */
+            min-width: 900px;
+            table-layout: fixed; /* make columns respect min-widths and allow header wrapping */
             border-collapse: collapse;
             background: white;
             border-radius: 10px;
@@ -159,12 +161,94 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             padding: 10px;
             text-align: center;
             font-size: 14px;
+            white-space: normal; /* allow header and cells to wrap into 2-3 lines */
+            overflow-wrap: break-word;
         }
 
         th {
             background: #b8860b;
             color: white;
             font-weight: bold;
+            line-height: 1.2; /* help multi-line headers look compact */
+        }
+
+        /* Column minimum widths:
+           - Name (col 1): 6 characters + padding
+           - Weight (col 2): 3 characters + padding
+           - Purity (col 3): 3 characters + padding
+           - Total Gold Before GST (col 4): 10 characters + padding
+           - Total Making Charges (col 5): 10 characters + padding
+           - GST on Gold (col 6): 10 characters + padding
+           - Final Price (col 7): 10 characters + padding
+           - Delete button (col 8): fixed width of 30px
+        */
+        #ornamentTable th:nth-child(1), #ornamentTable td:nth-child(1) { min-width: calc(6ch + 10px); } /* Name */
+        #ornamentTable th:nth-child(2), #ornamentTable td:nth-child(2) { min-width: calc(3ch + 2px); } /* Weight */
+        #ornamentTable th:nth-child(3), #ornamentTable td:nth-child(3) { min-width: calc(3ch + 2px); } /* Purity */
+        #ornamentTable th:nth-child(4), #ornamentTable td:nth-child(4) { min-width: calc(10ch + 10px); } /* Total Gold */
+        #ornamentTable th:nth-child(5), #ornamentTable td:nth-child(5) { min-width: calc(10ch + 10px); } /* Making */
+        #ornamentTable th:nth-child(6), #ornamentTable td:nth-child(6) { min-width: calc(10ch + 10px); } /* GST on Gold (10 digits requirement) */
+        #ornamentTable th:nth-child(7), #ornamentTable td:nth-child(7) { min-width: calc(10ch + 10px); } /* Final Price (10 digits requirement) */
+        /* Last column (delete) fixed width: 30px with 3px padding */
+        #ornamentTable th:nth-child(8), #ornamentTable td:nth-child(8) {
+            width: 30px; padding: 3px; /* as requested */ box-sizing: border-box; /* ensure padding included in width */
+            min-width: 30px;
+            max-width: 30px;
+        }
+
+        /* Compact delete button (icon-only) */
+        .delete-btn {
+            padding: 0;
+            width: 100%;
+            height: 24px; /* compact to fit inside 30px column with padding */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+        .delete-btn:hover { background-color: #c9302c; }
+
+        /* External link style (use default link color to appear like a standard hyperlink) */
+        .external-link {
+            display: inline-block;
+            color: #0066cc;
+            text-decoration: underline;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        /* Animated hand to draw attention */
+        .hand-animate {
+            display: inline-block;
+            margin-left: 6px;
+            transform-origin: 50% 50%;
+            animation: wave 1.2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(2px) rotate(15deg); }
+            50% { transform: translateX(0) rotate(0deg); }
+            75% { transform: translateX(-2px) rotate(-15deg); }
+            100% { transform: translateX(0) rotate(0deg); }
+        }
+
+        /* Respect reduced motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            .hand-animate { animation: none; }
+        }
+
+        /* On very small screens allow table wrapper to scroll horizontally (already present), and reduce min-width to allow wrapping */
+        @media (max-width: 500px) {
+            #ornamentTable { min-width: 700px; }
+            #ornamentTable th, #ornamentTable td { font-size: 13px; padding: 8px; }
         }
 
         .grand-total-row {
@@ -218,20 +302,69 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
 
             <div style="grid-column: 1 / -1;">
                 <div id="hGapInputField">
+                    
                     <label>आज की 24K प्रति ग्राम सोने की कीमत (Today 24K Price per Gram)</label>
-                    <input type="number" value="12532.832" id="goldPrice" required>
+                    <a id="priceLookupLink" class="external-link" href="https://kotasarafa.in/category/kota-sarafa-latest-gold-and-silver-rates/" target="_blank" rel="noopener noreferrer" 
+                    title="नई टैब में नवीनतम दर देखें — To check today's latest price (opens in a new tab)"
+                    aria-label="नई टैब में नवीनतम दर देखें — To check today's latest price">
+                    <span class="hand-animate" aria-hidden="true">👉</span> आज की नवीनतम कीमत देखें (To check today's latest price)
+                    </a>
+                    <input type="number" value="" id="goldPrice" required>
                     <div id="goldPriceError" style="display:none; color:#b21f2d; font-size:13px; margin-top:4px;">
                         आज की 24K प्रति ग्राम सोने की कीमत गलत है।(Todays 1 gram gold value for 24k is incorrect)
                     </div>
                 </div>
                 <div id="hGapInputField">
                     <label>आभूषण का नाम (Ornament Name)</label>
-                    <input type="text" value="Pendent" id="ornamentName" required>
+                    <select name="rajasthani-ornaments" id="ornamentSelect" onchange="toggleCustomOrnament()">
+                        <optgroup label="Head Ornaments / सिर के सोने के आभूषण">
+                            <option value="borla">Borla: Forehead maang tikka / बोरला: मांग टीका</option>
+                            <option value="rakhdi">Rakhdi: Head ornament / रखड़ी: सिर का गहना</option>
+                            <option value="nath">Nath/Nathni: Nose ring / नथ/नथनी: नाक का छल्ला</option>
+                            <option value="mathapatti">Mathapatti: Brow chain / माथापट्टी: भौंह की माला</option>
+                            <option value="shishphool">Shishphool/Tidibhalka: Hairline frame / शीशफूल: बाल रेखा फ्रेम</option>
+                        </optgroup>
+                        <optgroup label="Neck Ornaments / गले के सोने के आभूषण">
+                            <option value="aad">Aad/Timaniya: Choker necklace / आद/तिमनिया: छोटी हार</option>
+                            <option value="kanthi">Kanthi: Necklace / कंठी: हार</option>
+                            <option value="mukthmala">Mukthmala: Beaded necklace / मुखमाला: मोतियों की माला</option>
+                            <option value="tussi">Tussi: Necklace / तुसी: हार</option>
+                            <option value="hansli">Hansli: Necklace / हंसली: गले का गहना</option>
+                        </optgroup>
+                        <optgroup label="Ear Ornaments / कान के सोने के आभूषण">
+                            <option value="surliya">Surliya: Earrings / सुरलिया: झुमके</option>
+                        </optgroup>
+                        <optgroup label="Hand & Arm / हाथ और बांह के सोने के आभूषण">
+                            <option value="bajuband">Bajuband/Bajubandh: Armlet / बाजूबंद: बांह का गहना</option>
+                            <option value="bangdi">Bangdi/Choora: Bangles / बांगड़ी/चूड़ा: चूड़ियां</option>
+                            <option value="haathphool">Haathphool: Hand harness / हाथफूल: हाथ का हार्नेस</option>
+                            <option value="gokhru">Gokhru: Bracelets / गोकhru: कंगन</option>
+                        </optgroup>
+                        <optgroup label="Waist Ornaments / कमर के सोने के आभूषण">
+                            <option value="kamarband">Kamarband/Tagdi/Kardhani: Waist chain / कमरबंद/टागड़ी/कारधणी: कमर की माला</option>
+                        </optgroup>
+                        <optgroup label="Foot Ornaments / पैर के सोने के आभूषण">
+                            <option value="jhanzar">Jhanzar/Pajebs: Ankle bells / झांझर/पजेब: पायल</option>
+                            <option value="bichua">Bichua/Bichhiya: Toe ring / बिछुआ: पैर की अंगूठी</option>
+                        </optgroup>
+                        <option value="custom">Custom / कस्टम</option>
+                    </select>
+                    <input type="text" id="customOrnamentName" placeholder="Enter custom ornament name / कस्टम आभूषण का नाम दर्ज करें" style="display:none; margin-top:5px;">
+                    <script>
+                        function toggleCustomOrnament() {
+                            const ornamentSelect = document.getElementById("ornamentSelect");
+                            const customOrnamentInput = document.getElementById("customOrnamentName");
+                            customOrnamentInput.style.display = ornamentSelect.value === "custom" ? "block" : "none";
+                        }
+                    </script>
                 </div>
 
                 <div id="hGapInputField">
                     <label>वजन - ग्राम (Weight in grams)</label>
-                    <input type="number" id="weight" value="50.020" step="0.01" required>
+                    <input type="number" id="weight" value="" step="0.01" required>
+                    <div id="weightError" style="display:none; color:#b21f2d; font-size:13px; margin-top:4px;">
+                        वजन आवश्यक है और यह 0gm से अधिक होना चाहिए। (Weight is required and must be greater than 0)
+                    </div>
                 </div>
 
                 <div id="hGapInputField">
@@ -258,7 +391,16 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                     <label>प्रति ग्राम निर्माण शुल्क(%) (Making Charges per Gram in %)</label>
                     <input type="number" id="makingCharges" value="12.5" step="0.01" required>
                     <div id="makingChargesError" style="display:none; color:#b21f2d; font-size:13px; margin-top:4px;">
-                        प्रति ग्राम निर्माण शुल्क % is incorrect, it can be up to 100% only.
+                        प्रति ग्राम निर्माण शुल्क % गलत है, यह अधिकतम 100% ही हो सकता है।,(Maximum making charges % can be 100%)
+                    </div>
+                    <div style="background: #fff8dc; border: 1px solid #b8860b; border-radius: 8px; padding: 10px; margin-top: 10px;">
+                        <h4 style="color: #b8860b; margin: 0; font-size: 16px;">सलाह (Note):</h4>
+                        <ul style="margin: 10px 0 0 20px; padding: 0; color: #5b4e27; font-size: 14px;">
+                            <li>20% से अधिक मेकिंग चार्ज लगाने पर सोना खरीदना घाटे का सौदा होगा।</li>
+                            <li>भारत में सोने के आभूषणों पर निर्माण शुल्क आमतौर पर 3% से 25% तक होता है, लेकिन 20% से ऊपर जाने पर कुल लागत मूल्य से कहीं अधिक हो जाती है, जो खरीदार के लिए नुकसानदेह साबित होता है।</li>
+                            <li>साधारण डिजाइनों के लिए 3-10% चुनें, जटिल के लिए अधिकतम 25% तक स्वीकार्य।</li>
+                            <li>हमेशा बिल में शुल्क का ब्रेकअप जांचें ताकि पारदर्शिता बनी रहे। इससे सब कुछ साफ-साफ पता चलता है।</li>
+                        </ul>
                     </div>
                 </div>
                 <!-- GST on Making removed -->
@@ -270,7 +412,7 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                             title="3% is the standard GST on ornaments as per Indian government, including a breakup of 1.5% IGST and 1.5% CGST."
                             onclick="alert(this.title)">ℹ️</span>
                     </span>
-                    <input type="number" id="goldGst" step="0.01" value="3" required>
+                    <input type="number" id="goldGst" step="1" value="3" required>
                 </div>
             </div>
         </form>
@@ -296,7 +438,7 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                     <th>सोने पर जीएसटी शुल्क(GST on Gold)</th>
                     <!-- GST on Making column removed -->
                     <th>अंतिम कीमत (Final Price)</th>
-                    <th>हटाएं (Delete)</th>
+                            <th aria-label="Delete"></th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -337,7 +479,19 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                 return;
             }
             // Read inputs defensively — default missing numeric fields to 0
-            const name = document.getElementById("ornamentName").value || "";
+            // Get ornament name: use custom input when 'custom' selected, otherwise use selected option text
+            let name = "";
+            const ornamentSelectEl = document.getElementById("ornamentSelect");
+            if (ornamentSelectEl) {
+                if (ornamentSelectEl.value === "custom") {
+                    const customNameEl = document.getElementById("customOrnamentName");
+                    name = (customNameEl && customNameEl.value) || "";
+                } else {
+                    // prefer the option's displayed text (which includes Hindi/English label)
+                    const selectedOption = ornamentSelectEl.options && ornamentSelectEl.options[ornamentSelectEl.selectedIndex];
+                    name = (selectedOption && selectedOption.text) || ornamentSelectEl.value || "";
+                }
+            }
             const weight = parseFloat(document.getElementById("weight").value) || 0;
             const puritySelect = document.getElementById("puritySelect").value;
             const goldPrice = parseFloat(document.getElementById("goldPrice").value) || 0;
@@ -426,6 +580,7 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             updateCalculateButtonState();
         });
         document.getElementById("goldPrice").addEventListener("input", function () { updatePricePerGram(); validateGoldPrice(); updateCalculateButtonState(); });
+        document.getElementById("weight").addEventListener("input", function () { validateWeight(); updateCalculateButtonState(); });
         document.getElementById("makingCharges").addEventListener("input", function () { validateMakingCharges(); updateCalculateButtonState(); });
         document.getElementById("customPurity").addEventListener("input", function () { updatePricePerGram(); updateCalculateButtonState(); });
 
@@ -438,16 +593,42 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
         function validateGoldPrice() {
             const goldPriceEl = document.getElementById("goldPrice");
             const errorEl = document.getElementById("goldPriceError");
-            const val = parseFloat(goldPriceEl && goldPriceEl.value) || 0;
+            const raw = goldPriceEl && goldPriceEl.value;
+            const val = parseFloat(raw);
+            // Empty or invalid or non-positive
+            if (!raw || isNaN(val) || val <= 0) {
+                if (errorEl) errorEl.style.display = 'block';
+                if (errorEl) errorEl.textContent = 'यह फ़ील्ड आवश्यक है और 0 से अधिक होना चाहिए। (Price is required and must be greater than 0)';
+                goldPriceEl.style.borderColor = '#b21f2d';
+                return false;
+            }
+            // Out-of-range value (too high)
             if (val > 25000) {
                 if (errorEl) errorEl.style.display = 'block';
-                // set a visual hint on input
+                if (errorEl) errorEl.textContent = 'आज की 24K प्रति ग्राम सोने की कीमत गलत है।(Todays 1 gram gold value for 24k is incorrect)';
                 goldPriceEl.style.borderColor = '#b21f2d';
-            } else {
-                if (errorEl) errorEl.style.display = 'none';
-                goldPriceEl.style.borderColor = '#d2b48c';
+                return false;
             }
-            return !(val > 25000);
+            // Valid
+            if (errorEl) errorEl.style.display = 'none';
+            goldPriceEl.style.borderColor = '#d2b48c';
+            return true;
+        }
+        
+        // Validate weight field (non-empty and > 0)
+        function validateWeight() {
+            const wEl = document.getElementById("weight");
+            const err = document.getElementById("weightError");
+            const raw = wEl && wEl.value;
+            const val = parseFloat(raw);
+            if (!raw || isNaN(val) || val <= 0) {
+                if (err) err.style.display = 'block';
+                wEl.style.borderColor = '#b21f2d';
+                return false;
+            }
+            if (err) err.style.display = 'none';
+            wEl.style.borderColor = '#d2b48c';
+            return true;
         }
             // Validate making charges input and show error if > 80%
             function validateMakingCharges() {
@@ -469,8 +650,9 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
                 if (!btn) return true;
                 const isGoldValid = validateGoldPrice();
                 const isMakingValid = validateMakingCharges();
+                const isWeightValid = validateWeight();
                 const isValid = isGoldValid && isMakingValid;
-                btn.disabled = !isValid;
+                btn.disabled = !(isValid && isWeightValid);
                 return isValid;
             }
           
@@ -506,17 +688,11 @@ This refined prompt makes the intent, expected UI/UX, and data management requir
             // Add delete button cell
             const deleteCell = row.insertCell();
             const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "हटाएं (Delete)";
-            deleteBtn.style.padding = "6px 12px";
-            deleteBtn.style.backgroundColor = "#d9534f";
-            deleteBtn.style.color = "white";
-            deleteBtn.style.border = "none";
-            deleteBtn.style.borderRadius = "4px";
-            deleteBtn.style.cursor = "pointer";
-            deleteBtn.style.fontSize = "12px";
-            deleteBtn.onclick = function () {
-                deleteRow(rowIndex);
-            };
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '✖';
+            deleteBtn.title = 'हटाएं (Delete)';
+            deleteBtn.setAttribute('aria-label', 'Delete');
+            deleteBtn.onclick = function () { deleteRow(rowIndex); };
             deleteCell.appendChild(deleteBtn);
 
             updateGrandTotals();
